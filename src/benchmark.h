@@ -15,8 +15,6 @@ class BenchmarkTest {
 		static std::vector<BenchmarkTest> compareByFastest(std::vector<BenchmarkTest> tests);
 		static std::vector<BenchmarkTest> compareBySlowest(std::vector<BenchmarkTest> tests);
 
-		static BenchmarkTestComparison compare(std::vector<BenchmarkTest> tests);
-
 		float median();
 		float average();
 		float fastest();
