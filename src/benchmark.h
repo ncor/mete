@@ -1,11 +1,12 @@
 #include <string>
 #include <vector>
+#include <future>
 
 
 class BenchmarkTest {
 	public:
 		std::string alias;
-		std::vector<float> iterationsTime;
+		std::vector<int> iterationsTime;
 
 		BenchmarkTest(std::string alias, std::vector<int> iterationsTime);
 
@@ -24,12 +25,12 @@ class BenchmarkTest {
 
 class Benchmark {
 	public:
-		std::string command;
-
-		Benchmark(std::string command);
-
-		BenchmarkTest test(int iterations);
+		static BenchmarkTest test(std::string command, int iterationsCount);
+		static BenchmarkTest test(std::string command);
+		static std::future<BenchmarkTest> testAsync(std::string command, int iterationsCount);
+		static std::future<BenchmarkTest> testAsync(std::string command);
 	private:
-		float execute();
+		static int runtime(std::string command);
+		static std::future<int> runtimeAsync(std::string command);
 };
 
