@@ -5,16 +5,24 @@
 #include <chrono>
 #include <future>
 #include "benchmark.h"
-#include "utils.cpp"
+#include "utils.h"
 
 
 /*
  * BenchmarkTest:
  */
 
-BenchmarkTest::BenchmarkTest(std::string alias, std::vector<int> iterationsTime) {
+BenchmarkTest::BenchmarkTest(std::string alias, std::vector<std::chrono::nanoseconds> iterationsTime) {
 	this->alias = alias;
-	this->iterationsTime = iterationsTime;	
+	this->iterationsTime = iterationsTime;
+	this->realtimeIterations = this->computeRealtimeIterations();
+
+	this->first = this->iterationsTime[0];
+	this->last = this->iterationsTime[this->iterationsTime.size() - 1];
+	this->median = this->computeMedian();
+	this->average = this->computeAverage();
+	this->fastest = this->computeFastest();
+	this->slowest = this->computeSlowest();
 }
 
 /*
@@ -24,7 +32,7 @@ BenchmarkTest::BenchmarkTest(std::string alias, std::vector<int> iterationsTime)
 std::vector<BenchmarkTest> BenchmarkTest::compareByMedian(std::vector<BenchmarkTest> tests) {
 	std::sort(tests.begin(), tests.end(),
 		[](const BenchmarkTest& a, const BenchmarkTest& b) -> bool {
-			return a.median() < b.median();
+			return a.median.count() < b.median.count();
 		}
 	);
 
@@ -34,7 +42,7 @@ std::vector<BenchmarkTest> BenchmarkTest::compareByMedian(std::vector<BenchmarkT
 std::vector<BenchmarkTest> BenchmarkTest::compareByAverage(std::vector<BenchmarkTest> tests) {
 	std::sort(tests.begin(), tests.end(),
 		[](const BenchmarkTest& a, const BenchmarkTest& b) -> bool {
-			return a.average() < b.average();
+			return a.average.count() < b.average.count();
 		}
 	);
 
@@ -44,7 +52,7 @@ std::vector<BenchmarkTest> BenchmarkTest::compareByAverage(std::vector<Benchmark
 std::vector<BenchmarkTest> BenchmarkTest::compareByFastest(std::vector<BenchmarkTest> tests) {
 	std::sort(tests.begin(), tests.end(),
 		[](const BenchmarkTest& a, const BenchmarkTest& b) -> bool {
-			return a.fastest() < b.fastest();
+			return a.fastest.count() < b.fastest.count();
 		}
 	);
 
@@ -54,35 +62,37 @@ std::vector<BenchmarkTest> BenchmarkTest::compareByFastest(std::vector<Benchmark
 std::vector<BenchmarkTest> BenchmarkTest::compareBySlowest(std::vector<BenchmarkTest> tests) {
 	std::sort(tests.begin(), tests.end(),
 		[](const BenchmarkTest& a, const BenchmarkTest& b) -> bool {
-			return a.slowest() < b.slowest();
+			return a.slowest.count() < b.slowest.count();
 		}
 	);
 
 	return tests;
 }
 
-int BenchmarkTest::first() {
-	return this->iterationsTime[0];
+std::vector<unsigned long long> BenchmarkTest::computeRealtimeIterations() {
+	std::vector<unsigned long long> realtimeIterations;
+
+	for (int i = 0; i < this->iterationsTime.size(); i++) {
+		realtimeIterations.push_back(this->iterationsTime[i].count());
+	}
+
+	return realtimeIterations;
 }
 
-int BenchmarkTest::last() {
-	return this->iterationsTime[this->iterationsTime.size() - 1];
+std::chrono::nanoseconds BenchmarkTest::computeMedian() {
+	return std::chrono::nanoseconds(utils::median<unsigned long long>(this->realtimeIterations));
 }
 
-float BenchmarkTest::median() const {
-	return utils::median<int>(this->iterationsTime);
+std::chrono::nanoseconds BenchmarkTest::computeAverage() {
+	return std::chrono::nanoseconds(utils::average<unsigned long long>(this->realtimeIterations));
 }
 
-float BenchmarkTest::average() const {
-	return utils::average<int>(this->iterationsTime);
+std::chrono::nanoseconds BenchmarkTest::computeFastest() {
+	return std::chrono::nanoseconds(utils::min<unsigned long long>(this->realtimeIterations));
 }
 
-int BenchmarkTest::fastest() const {
-	return utils::min<int>(this->iterationsTime);
-}
-
-int BenchmarkTest::slowest() const {
-	return utils::max<int>(this->iterationsTime);
+std::chrono::nanoseconds BenchmarkTest::computeSlowest() {
+	return std::chrono::nanoseconds(utils::max<unsigned long long>(this->realtimeIterations));
 }
 
 
@@ -94,7 +104,7 @@ int BenchmarkTest::slowest() const {
  * Structures all runtime test iterations.
  */
 BenchmarkTest Benchmark::test(std::string command, int iterationsCount) {
-	std::vector<int> iterationsTime(iterationsCount);
+	std::vector<std::chrono::nanoseconds> iterationsTime(iterationsCount);
 
 	for (int i = 0; i < iterationsCount; i++) {
 		iterationsTime[i] = Benchmark::runtime(command);
@@ -123,21 +133,21 @@ std::future<BenchmarkTest> Benchmark::testAsync(std::string command) {
 /*
  * Runs shell command and measures execution time.
  */
-int Benchmark::runtime(std::string command) {
+std::chrono::nanoseconds Benchmark::runtime(std::string command) {
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
 	strcat((char*)command.c_str(), " > nul");
 	system(command.c_str());
 	
-	return (int)std::chrono::duration_cast<std::chrono::microseconds>(
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(
 		std::chrono::steady_clock::now() - begin
-	).count();
+	);
 }
 
 /*
  * Async wrapper for runtime().
  */
-std::future<int> Benchmark::runtimeAsync(std::string command) {
+std::future<std::chrono::nanoseconds> Benchmark::runtimeAsync(std::string command) {
 	return std::async(std::launch::async, &Benchmark::runtime, command);
 }
 

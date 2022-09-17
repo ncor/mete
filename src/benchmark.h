@@ -3,26 +3,35 @@
 #include <string>
 #include <vector>
 #include <future>
+#include <chrono>
 
 
 class BenchmarkTest {
 	public:
 		std::string alias;
-		std::vector<int> iterationsTime;
+		std::vector<std::chrono::nanoseconds> iterationsTime;
+		std::vector<unsigned long long> realtimeIterations;
 
-		BenchmarkTest(std::string alias, std::vector<int> iterationsTime);
+		std::chrono::nanoseconds first;
+		std::chrono::nanoseconds last;
+		std::chrono::nanoseconds median;
+		std::chrono::nanoseconds average;
+		std::chrono::nanoseconds fastest;
+		std::chrono::nanoseconds slowest;
+
+		BenchmarkTest(std::string alias, std::vector<std::chrono::nanoseconds> iterationsTime);
 
 		static std::vector<BenchmarkTest> compareByMedian(std::vector<BenchmarkTest> tests);
 		static std::vector<BenchmarkTest> compareByAverage(std::vector<BenchmarkTest> tests);
 		static std::vector<BenchmarkTest> compareByFastest(std::vector<BenchmarkTest> tests);
 		static std::vector<BenchmarkTest> compareBySlowest(std::vector<BenchmarkTest> tests);
 		
-		int first();
-		int last();
-		float median() const;
-		float average() const;
-		int fastest() const;
-		int slowest() const;
+	private:
+		std::vector<unsigned long long> computeRealtimeIterations();
+		std::chrono::nanoseconds computeMedian();
+		std::chrono::nanoseconds computeAverage();
+		std::chrono::nanoseconds computeFastest();
+		std::chrono::nanoseconds computeSlowest();
 };
 
 class Benchmark {
@@ -32,7 +41,7 @@ class Benchmark {
 		static std::future<BenchmarkTest> testAsync(std::string command, int iterationsCount);
 		static std::future<BenchmarkTest> testAsync(std::string command);
 	private:
-		static int runtime(std::string command);
-		static std::future<int> runtimeAsync(std::string command);
+		static std::chrono::nanoseconds runtime(std::string command);
+		static std::future<std::chrono::nanoseconds> runtimeAsync(std::string command);
 };
 
