@@ -78,11 +78,11 @@ float BenchmarkTest::average() const {
 }
 
 int BenchmarkTest::fastest() const {
-	return utils::max<int>(this->iterationsTime);
+	return utils::min<int>(this->iterationsTime);
 }
 
 int BenchmarkTest::slowest() const {
-	return utils::min<int>(this->iterationsTime);
+	return utils::max<int>(this->iterationsTime);
 }
 
 
