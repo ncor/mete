@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <vector>
 #include <future>
@@ -14,11 +16,13 @@ class BenchmarkTest {
 		static std::vector<BenchmarkTest> compareByAverage(std::vector<BenchmarkTest> tests);
 		static std::vector<BenchmarkTest> compareByFastest(std::vector<BenchmarkTest> tests);
 		static std::vector<BenchmarkTest> compareBySlowest(std::vector<BenchmarkTest> tests);
-
-		float median();
-		float average();
-		float fastest();
-		float slowest();
+		
+		int first();
+		int last();
+		float median() const;
+		float average() const;
+		int fastest() const;
+		int slowest() const;
 };
 
 class Benchmark {
