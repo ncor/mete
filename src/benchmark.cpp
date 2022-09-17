@@ -1,4 +1,5 @@
 #include <string>
+#include <cstring>
 #include <algorithm>
 #include <vector>
 #include <chrono>
@@ -124,6 +125,8 @@ std::future<BenchmarkTest> Benchmark::testAsync(std::string command) {
  */
 int Benchmark::runtime(std::string command) {
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+	strcat((char*)command.c_str(), " > nul");
 	system(command.c_str());
 	
 	return (int)std::chrono::duration_cast<std::chrono::microseconds>(
