@@ -16,10 +16,9 @@ enum Comparison {
 
 BenchmarkTest runBenchmark(std::string command, int id, int iterationsCount) {
     std::cout << format::style::wrap(
-            "\nBenchmark #" + std::to_string(id) + ":",
+            "Benchmark #" + std::to_string(id) + ":",
             std::vector<std::string> {
-                format::style::decoration::bold,
-                format::style::colors::text::intense::yellow
+                format::style::decoration::bold
             }
         )
         << " "
@@ -31,9 +30,8 @@ BenchmarkTest runBenchmark(std::string command, int id, int iterationsCount) {
 
     std::cout << progressBar->render();
 
-	while (test.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready) {
+	while (test.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
 		std::cout << progressBar->update();
-	}
 
 	std::cout << progressBar->purge();
 	test.wait();
@@ -41,39 +39,33 @@ BenchmarkTest runBenchmark(std::string command, int id, int iterationsCount) {
 	BenchmarkTest results = test.get();
 	
     std::cout
-        << "Total time:\t\t± "
+        << "  Total time:\t\t± "
         << format::style::wrap(
             format::time(results.total),
-            std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::blue }
-        )
-        << format::style::wrap(
-            " " + std::to_string(iterationsCount) + " run(s)",
-            std::vector<std::string>{ format::style::colors::text::intense::black }
-        )
-        << std::endl;
+            std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::yellow }
+        );
 
 	if (iterationsCount > 1) {
         std::cout
-            << "Average:\t\t"
             << format::style::wrap(
-                format::time(results.average),
-                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::blue }
-            )
-            << std::endl;
-
-		std::cout
-            << "Median:\t\t\t"
-            << format::style::wrap(
-                format::time(results.median),
-                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::blue }
+                " " + std::to_string(iterationsCount) + " run(s)",
+                std::vector<std::string>{ format::style::colors::text::intense::black }
             )
             << std::endl;
 
         std::cout
-            << "Range ("
+            << "  Average:\t\t"
+            << format::style::wrap(
+                format::time(results.average),
+                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::yellow }
+            )
+            << std::endl;
+
+        std::cout
+            << "  Range ("
             << format::style::wrap(
                 "min",
-                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::green }
+                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::cyan }
             )
             << " … "
             << format::style::wrap(
@@ -83,26 +75,26 @@ BenchmarkTest runBenchmark(std::string command, int id, int iterationsCount) {
             << "):\t"
             << format::style::wrap(
                 format::time(results.fastest),
-                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::green }
+                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::cyan }
             )
             << " … "
             << format::style::wrap(
                 format::time(results.slowest),
                 std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::red }
-            );
-	}
-
-	std::cout << "\n";
+            )
+            << std::endl;
+	} else {
+        std::cout << std::endl;
+    }
 
 	return results;
 }
 
-std::string compareTable(int compareType, std::vector<BenchmarkTest> results) {
+std::string compareTable(int compareType, std::vector<BenchmarkTest> results, std::string rowPrefix) {
     format::Table* table = new format::Table();
 
     for (int i = 0; i < results.size(); i++) {
         BenchmarkTest result = results[i];
-        std::string flag = "";
         std::string timeColor = format::style::colors::text::intense::yellow;
         std::string displayTime;
 
@@ -118,39 +110,28 @@ std::string compareTable(int compareType, std::vector<BenchmarkTest> results) {
             displayTime = format::time(result.slowest);
         }
 
-        if (!i) {
-            flag = " (best)";
-        } else if ((i + 1) == results.size()) {
-            flag = " (worst)";
-        }
-
-        if ((i + 1) == results.size()) {
+        if ((i + 1) == results.size())
             timeColor = format::style::colors::text::intense::red;
-        }
-
-        if (!i) {
-            timeColor = format::style::colors::text::intense::green;
-        }
+        if (!i)
+            timeColor = format::style::colors::text::cyan;
 
         table->addRow(
             tableRow {
+                tableElement {
+                    std::to_string(i + 1),
+                    std::to_string(i + 1)
+                },
                 tableElement {
                     result.alias,
                     result.alias
                 },
                 tableElement {
-                    displayTime + flag,
+                    displayTime,
                     format::style::wrap(
                         displayTime,
                         std::vector<std::string> {
                             format::style::decoration::bold,
                             timeColor
-                        }
-                    ) + format::style::wrap(
-                        flag,
-                        std::vector<std::string> {
-                            format::style::decoration::bold,
-                            format::style::colors::text::intense::black
                         }
                     )
                 }
@@ -158,34 +139,34 @@ std::string compareTable(int compareType, std::vector<BenchmarkTest> results) {
         );
     }
 
-    return table->render() + "\n";
+    return table->render(rowPrefix) + "\n";
 }
 
-bool isNumber(const std::string& s) {
-    std::string::const_iterator it = s.begin();
-    while (it != s.end() && std::isdigit(*it)) ++it;
-    return !s.empty() && it == s.end();
+std::string compareTable(int compareType, std::vector<BenchmarkTest> results) {
+    return compareTable(compareType, results, "");
 }
 
 
 int main(int argc, char* argv[]) {
-	int id = 1;
-	int iterationsCount = 1;
     std::vector<BenchmarkTest> results;
+    int iterationsCount = 1;
+	int id = 1;
 
 	for (int i = 1; i < argc; i++) {
 		std::string arg = std::string(argv[i]);
-		
+
 		if (arg[0] == '-' && (i + 1) != argc) {
 			std::string numberPart = arg.substr(1, arg.length());
 
-			if (isNumber(numberPart)) {
+			if (utils::isNumber(numberPart))
 				iterationsCount = std::stoi(numberPart);
-			}
 
 			continue;
 		} else {
 			results.push_back(runBenchmark(arg, id, iterationsCount));
+            
+            if ((i + 1) != argc) std::cout << std::endl;
+
 			iterationsCount = 1;
 			id++;
 		}
@@ -194,15 +175,12 @@ int main(int argc, char* argv[]) {
     if (results.size() > 1) {
         std::cout
             << format::style::wrap(
-                "\nComparison:",
+                "\nSummary\n",
                 std::vector<std::string> {
-                    format::style::decoration::bold,
-                    format::style::colors::text::intense::yellow
+                    format::style::decoration::bold
                 }
             )
-            << "\n";
-
-        std::cout << compareTable(Comparison::Average, BenchmarkTest::compareByAverage(results)) << std::endl;
+            << compareTable(Comparison::Average, BenchmarkTest::compareByAverage(results), "  ");
     }
 
 	return 0;
