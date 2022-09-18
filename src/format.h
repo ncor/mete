@@ -16,12 +16,16 @@ typedef std::vector<tableRow> tableRows;
 namespace format {
     namespace symbols {
         std::vector<std::string> braileCycled = {
-            "⠟",
-            "⠯",
-            "⠷",
-            "⠾",
-            "⠽",
-            "⠻"
+            "⠋",
+            "⠙",
+            "⠹",
+            "⠸",
+            "⠼",
+            "⠴",
+            "⠦",
+            "⠧",
+            "⠇",
+            "⠏"
         };
     }
 
@@ -108,6 +112,7 @@ namespace format {
             void addRows(tableRows rows);
             void extendRow(int rowIndex, tableRow elements);
 
+            std::string render(std::string rowPrefix);
             std::string render();
     };
 
