@@ -76,7 +76,7 @@ inline void format::Table::extendRow(int rowIndex, tableRow elements) {
     }
 }
 
-inline std::string format::Table::render() {
+inline std::string format::Table::render(std::string rowPrefix) {
     std::string render = "";
 
     std::vector<int> rowElementsCounts;
@@ -108,16 +108,16 @@ inline std::string format::Table::render() {
         std::string terminationLine = "";
         bool lastRow = (i + 1) == this->rows.size();
 
-        rowRenderLines[1] += "│";
+        rowRenderLines[1] += rowPrefix + "│";
 
         if (i) {
-            rowRenderLines[0] += "├";
+            rowRenderLines[0] += rowPrefix +"├";
         } else {
-            rowRenderLines[0] += "┌";
+            rowRenderLines[0] += rowPrefix + "┌";
         }
 
         if (lastRow) {
-            terminationLine += "└";
+            terminationLine += rowPrefix + "└";
         }
 
         for (int j = 0; j < columnsCount; j++) {
@@ -175,6 +175,10 @@ inline std::string format::Table::render() {
     }
 
     return render;
+}
+
+inline std::string format::Table::render() {
+    return format::Table::render("");
 }
 
 
