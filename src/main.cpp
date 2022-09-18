@@ -3,51 +3,162 @@
 #include <chrono>
 #include "benchmark.h"
 #include "utils.h"
+#include "format.h"
 
+
+enum Comparison {
+    Total,
+    Average,
+    Median,
+    Fastest,
+    Slowest
+};
 
 BenchmarkTest runBenchmark(std::string command, int id, int iterationsCount) {
-	std::cout << "\e[1mBenchmark #" << id << ":\e[0m " << command << std::endl;
+    std::cout << format::style::wrap(
+            "\nBenchmark #" + std::to_string(id) + ":",
+            std::vector<std::string> {
+                format::style::decoration::bold,
+                format::style::colors::text::intense::yellow
+            }
+        )
+        << " "
+        << command
+        << std::endl;
 	
-	std::future<BenchmarkTest> test = Benchmark::testAsync(command, iterationsCount);
-	utils::LoadingIndicator* loadingIndicator = new utils::LoadingIndicator();
+	std::future<BenchmarkTest> test = Benchmark::testAsync(id, command, iterationsCount);
+	format::ProgressBar* progressBar = new format::ProgressBar(format::symbols::braileCycled, "Working");
 
-	std::chrono::steady_clock::time_point testBegin = std::chrono::steady_clock::now();
-
-	std::cout << loadingIndicator->render();
+    std::cout << progressBar->render();
 
 	while (test.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready) {
-		std::cout << loadingIndicator->next();
+		std::cout << progressBar->update();
 	}
 
-	std::cout << loadingIndicator->purge();
+	std::cout << progressBar->purge();
 	test.wait();
-
-	std::chrono::nanoseconds timeElapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
-		std::chrono::steady_clock::now() - testBegin
-	);
 
 	BenchmarkTest results = test.get();
 	
-	std::cout << "Time elapsed:\t\t± " << "\e[1m\x1B[92m" << utils::formatTime(timeElapsed);
-	std::cout << "\e[0m\x1B[90m " << iterationsCount << " runs\033[0m" << std::endl;
+    std::cout
+        << "Total time:\t\t± "
+        << format::style::wrap(
+            format::time(results.total),
+            std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::blue }
+        )
+        << format::style::wrap(
+            " " + std::to_string(iterationsCount) + " run(s)",
+            std::vector<std::string>{ format::style::colors::text::intense::black }
+        )
+        << std::endl;
 
 	if (iterationsCount > 1) {
-		std::cout << "Average:\t\t" << "\e[1m\x1B[92m" << utils::formatTime(results.average);
-		std::cout << "\e[0m\033[0m" << std::endl;
+        std::cout
+            << "Average:\t\t"
+            << format::style::wrap(
+                format::time(results.average),
+                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::blue }
+            )
+            << std::endl;
 
-		std::cout << "Median:\t\t\t" << "\e[1m\x1B[92m" << utils::formatTime(results.median);
-		std::cout << "\e[0m\033[0m" << std::endl;
+		std::cout
+            << "Median:\t\t\t"
+            << format::style::wrap(
+                format::time(results.median),
+                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::blue }
+            )
+            << std::endl;
 
-		std::cout << "Range (\e[1m\x1B[96mmin \e[0m\033[0m… \e[1m\x1B[93mmax\e[0m\033[0m):\t";
-		std::cout << "\e[1m\x1B[96m" << utils::formatTime(results.fastest) << "\e[0m\033[0m";
-		std::cout << " … ";
-		std::cout << "\e[1m\x1B[93m" << utils::formatTime(results.slowest) << "\e[0m\033[0m";
-		std::cout << std::endl;
+        std::cout
+            << "Range ("
+            << format::style::wrap(
+                "min",
+                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::green }
+            )
+            << " … "
+            << format::style::wrap(
+                "max",
+                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::red }
+            )
+            << "):\t"
+            << format::style::wrap(
+                format::time(results.fastest),
+                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::green }
+            )
+            << " … "
+            << format::style::wrap(
+                format::time(results.slowest),
+                std::vector<std::string>{ format::style::decoration::bold, format::style::colors::text::intense::red }
+            );
 	}
 
-	std::cout << std::endl;
+	std::cout << "\n";
 
 	return results;
+}
+
+std::string compareTable(int compareType, std::vector<BenchmarkTest> results) {
+    format::Table* table = new format::Table();
+
+    for (int i = 0; i < results.size(); i++) {
+        BenchmarkTest result = results[i];
+        std::string flag = "";
+        std::string timeColor = format::style::colors::text::intense::yellow;
+        std::string displayTime;
+
+        if (compareType == Comparison::Total) {
+            displayTime = format::time(result.total);
+        } else if (compareType == Comparison::Average) {
+            displayTime = format::time(result.average);
+        } else if (compareType == Comparison::Median) {
+            displayTime = format::time(result.median);
+        } else if (compareType == Comparison::Fastest) {
+            displayTime = format::time(result.fastest);
+        } else if (compareType == Comparison::Slowest) {
+            displayTime = format::time(result.slowest);
+        }
+
+        if (!i) {
+            flag = " (best)";
+        } else if ((i + 1) == results.size()) {
+            flag = " (worst)";
+        }
+
+        if ((i + 1) == results.size()) {
+            timeColor = format::style::colors::text::intense::red;
+        }
+
+        if (!i) {
+            timeColor = format::style::colors::text::intense::green;
+        }
+
+        table->addRow(
+            tableRow {
+                tableElement {
+                    result.alias,
+                    result.alias
+                },
+                tableElement {
+                    displayTime + flag,
+                    format::style::wrap(
+                        displayTime,
+                        std::vector<std::string> {
+                            format::style::decoration::bold,
+                            timeColor
+                        }
+                    ) + format::style::wrap(
+                        flag,
+                        std::vector<std::string> {
+                            format::style::decoration::bold,
+                            format::style::colors::text::intense::black
+                        }
+                    )
+                }
+            }
+        );
+    }
+
+    return table->render() + "\n";
 }
 
 bool isNumber(const std::string& s) {
@@ -56,9 +167,11 @@ bool isNumber(const std::string& s) {
     return !s.empty() && it == s.end();
 }
 
+
 int main(int argc, char* argv[]) {
 	int id = 1;
 	int iterationsCount = 1;
+    std::vector<BenchmarkTest> results;
 
 	for (int i = 1; i < argc; i++) {
 		std::string arg = std::string(argv[i]);
@@ -72,12 +185,25 @@ int main(int argc, char* argv[]) {
 
 			continue;
 		} else {
-			runBenchmark(arg, id, iterationsCount);
+			results.push_back(runBenchmark(arg, id, iterationsCount));
 			iterationsCount = 1;
 			id++;
 		}
 	}
 
+    if (results.size() > 1) {
+        std::cout
+            << format::style::wrap(
+                "\nComparison:",
+                std::vector<std::string> {
+                    format::style::decoration::bold,
+                    format::style::colors::text::intense::yellow
+                }
+            )
+            << "\n";
+
+        std::cout << compareTable(Comparison::Average, BenchmarkTest::compareByAverage(results)) << std::endl;
+    }
+
 	return 0;
 }
-

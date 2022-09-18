@@ -12,11 +12,12 @@
  * BenchmarkTest:
  */
 
-BenchmarkTest::BenchmarkTest(std::string alias, std::vector<std::chrono::nanoseconds> iterationsTime) {
+BenchmarkTest::BenchmarkTest(std::string alias, std::vector<std::chrono::nanoseconds> iterationsTime, std::chrono::nanoseconds total) {
 	this->alias = alias;
 	this->iterationsTime = iterationsTime;
 	this->realtimeIterations = this->computeRealtimeIterations();
 
+    this->total = total;
 	this->first = this->iterationsTime[0];
 	this->last = this->iterationsTime[this->iterationsTime.size() - 1];
 	this->median = this->computeMedian();
@@ -28,6 +29,16 @@ BenchmarkTest::BenchmarkTest(std::string alias, std::vector<std::chrono::nanosec
 /*
  * There're all sorting algorithms below. (compareBy)
  */
+
+std::vector<BenchmarkTest> BenchmarkTest::compareByTotal(std::vector<BenchmarkTest> tests) {
+	std::sort(tests.begin(), tests.end(),
+		[](const BenchmarkTest& a, const BenchmarkTest& b) -> bool {
+			return a.total.count() < b.total.count();
+		}
+	);
+
+	return tests;
+}
 
 std::vector<BenchmarkTest> BenchmarkTest::compareByMedian(std::vector<BenchmarkTest> tests) {
 	std::sort(tests.begin(), tests.end(),
@@ -103,31 +114,38 @@ std::chrono::nanoseconds BenchmarkTest::computeSlowest() {
 /*
  * Structures all runtime test iterations.
  */
-BenchmarkTest Benchmark::test(std::string command, int iterationsCount) {
+BenchmarkTest Benchmark::test(int id, std::string command, int iterationsCount) {
 	std::vector<std::chrono::nanoseconds> iterationsTime(iterationsCount);
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
 	for (int i = 0; i < iterationsCount; i++) {
 		iterationsTime[i] = Benchmark::runtime(command);
 	}
 
-	return *(new BenchmarkTest(command, iterationsTime));
+	return *(new BenchmarkTest(
+        "#" + std::to_string(id) + ": " + command,
+        iterationsTime,
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now() - begin
+        )
+    ));
 }
 
-BenchmarkTest Benchmark::test(std::string command) {
-	return Benchmark::test(command, 1);
+BenchmarkTest Benchmark::test(int id, std::string command) {
+	return Benchmark::test(id, command, 1);
 }
 
 /*
  * Async wrapper for benchmark().
  */
-std::future<BenchmarkTest> Benchmark::testAsync(std::string command, int iterationsCount) {
-	return std::async(std::launch::async, [ command, iterationsCount ]() {
-		return Benchmark::test(command, iterationsCount);
+std::future<BenchmarkTest> Benchmark::testAsync(int id, std::string command, int iterationsCount) {
+	return std::async(std::launch::async, [ id, command, iterationsCount ]() {
+		return Benchmark::test(id, command, iterationsCount);
 	});
 }
 
-std::future<BenchmarkTest> Benchmark::testAsync(std::string command) {
-	return Benchmark::testAsync(command, 1);
+std::future<BenchmarkTest> Benchmark::testAsync(int id, std::string command) {
+	return Benchmark::testAsync(id, command, 1);
 }
 
 /*

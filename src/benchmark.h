@@ -12,6 +12,7 @@ class BenchmarkTest {
 		std::vector<std::chrono::nanoseconds> iterationsTime;
 		std::vector<unsigned long long> realtimeIterations;
 
+        std::chrono::nanoseconds total;
 		std::chrono::nanoseconds first;
 		std::chrono::nanoseconds last;
 		std::chrono::nanoseconds median;
@@ -19,8 +20,9 @@ class BenchmarkTest {
 		std::chrono::nanoseconds fastest;
 		std::chrono::nanoseconds slowest;
 
-		BenchmarkTest(std::string alias, std::vector<std::chrono::nanoseconds> iterationsTime);
+		BenchmarkTest(std::string alias, std::vector<std::chrono::nanoseconds> iterationsTime, std::chrono::nanoseconds total);
 
+        static std::vector<BenchmarkTest> compareByTotal(std::vector<BenchmarkTest> tests);
 		static std::vector<BenchmarkTest> compareByMedian(std::vector<BenchmarkTest> tests);
 		static std::vector<BenchmarkTest> compareByAverage(std::vector<BenchmarkTest> tests);
 		static std::vector<BenchmarkTest> compareByFastest(std::vector<BenchmarkTest> tests);
@@ -36,12 +38,11 @@ class BenchmarkTest {
 
 class Benchmark {
 	public:
-		static BenchmarkTest test(std::string command, int iterationsCount);
-		static BenchmarkTest test(std::string command);
-		static std::future<BenchmarkTest> testAsync(std::string command, int iterationsCount);
-		static std::future<BenchmarkTest> testAsync(std::string command);
+		static BenchmarkTest test(int id, std::string command, int iterationsCount);
+		static BenchmarkTest test(int id, std::string command);
+		static std::future<BenchmarkTest> testAsync(int id, std::string command, int iterationsCount);
+		static std::future<BenchmarkTest> testAsync(int id, std::string command);
 	private:
 		static std::chrono::nanoseconds runtime(std::string command);
 		static std::future<std::chrono::nanoseconds> runtimeAsync(std::string command);
 };
-
