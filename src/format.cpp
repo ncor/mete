@@ -77,7 +77,6 @@ inline void format::Table::extendRow(int rowIndex, tableRow elements) {
 }
 
 inline std::string format::Table::render() {
-    // TODO: Implement
     std::string render = "";
 
     std::vector<int> rowElementsCounts;
