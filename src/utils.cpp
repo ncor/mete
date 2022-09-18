@@ -44,3 +44,9 @@ template <typename T>
 inline T utils::min(std::vector<T> v) {
 	return *std::min_element(v.begin(), v.end());
 }
+
+inline bool utils::isNumber(const std::string& s) {
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && std::isdigit(*it)) ++it;
+    return !s.empty() && it == s.end();
+}

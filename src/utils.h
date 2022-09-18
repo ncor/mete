@@ -20,6 +20,8 @@ namespace utils {
 
 	template <typename T>
 	T min(std::vector<T> v);
+
+    bool isNumber(const std::string& s);
 }
 
 #include "utils.cpp"
